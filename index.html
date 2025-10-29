@@ -51,7 +51,17 @@ html, body {
   overflow: hidden;
 }
 
+button {
+  transition: all 0.25s ease;
+  transform: translateY(0);
+}
 
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+  
 </style>
 
 
@@ -199,9 +209,79 @@ fullscreenBtn.onclick = () => {
     document.exitFullscreen();
   }
 };
+// Hide everything except timer when running
+function hideUI() {
+  document.querySelector("header").style.display = "none";
+  document.querySelector("footer").style.display = "none";
+  document.querySelectorAll(".view").forEach(v => {
+    if (v.id !== "viewTimer") v.style.display = "none";
+  });
+}
 
+// Show everything again
+function showUI() {
+  document.querySelector("header").style.display = "";
+  document.querySelector("footer").style.display = "";
+  document.querySelectorAll(".view").forEach(v => {
+    v.style.display = "";
+  });
+}
+
+function startPause() {
+  if (!isRunning) {
+    isRunning = true;
+    startBtn.textContent = "Pause";
+    timerInt = setInterval(tick, 1000);
+    hideUI(); // hides everything except timer
+  } else {
+    isRunning = false;
+    clearInterval(timerInt);
+    startBtn.textContent = "Start";
+    showUI(); // shows everything again
+  }
+}
+
+function reset() {
+  isRunning = false;
+  clearInterval(timerInt);
+  isFocus = true;
+  remaining = focusMin.value * 60;
+  startBtn.textContent = "Start";
+  showUI(); // shows everything again
+  update();
+}
+
+// Save background when user changes it
+function setBackground(imageUrl) {
+  document.body.style.backgroundImage = `url('${imageUrl}')`;
+  localStorage.setItem('bgImage', imageUrl); // save it
+}
+
+// On page load, restore saved background
+window.addEventListener('load', () => {
+  const savedBg = localStorage.getItem('bgImage');
+  if (savedBg) {
+    document.body.style.backgroundImage = `url('${savedBg}')`;
+  }
+});
+
+<input type="file" id="bgUpload">
+
+document.getElementById('bgUpload').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      setBackground(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+  
 </script>
 </html>
+
 
 
 
