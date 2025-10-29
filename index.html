@@ -153,9 +153,29 @@ function startPause(){if(!isRunning){isRunning=true;startBtn.textContent="Pause"
 function reset(){isRunning=false;clearInterval(timerInt);isFocus=true;remaining=focusMin.value*60;update();startBtn.textContent="Start";}
 startBtn.onclick=startPause;resetBtn.onclick=reset;timerEl.onclick=startPause;update();
 
-/* Background upload */
-uploadBtn.onclick=()=>bgFile.click();
-bgFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=x=>{document.body.style.background=`url(${x.target.result}) center/cover no-repeat`;};r.readAsDataURL(f)};
+/* Background upload with saving */
+uploadBtn.onclick = () => bgFile.click();
+
+bgFile.onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = x => {
+    const imgData = x.target.result;
+    document.body.style.background = `url(${imgData}) center/cover no-repeat`;
+    localStorage.setItem("bgImage", imgData); // 💾 save it
+  };
+  r.readAsDataURL(f);
+};
+
+// Restore saved background on page load
+window.addEventListener("load", () => {
+  const savedBg = localStorage.getItem("bgImage");
+  if (savedBg) {
+    document.body.style.background = `url(${savedBg}) center/cover no-repeat`;
+  }
+});
+
 
 /* Button color & text color */
 colorBtn.onclick = () => {
@@ -281,6 +301,7 @@ document.getElementById('bgUpload').addEventListener('change', (event) => {
   
 </script>
 </html>
+
 
 
 
