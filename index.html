@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en">
 
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Focus Timer</title>
 <link rel="icon" type="image/png" href="favicon.png">
-  
+
 <style>
-:root{
+:root {
   --accent:#ffd54f;
   --btn-bg:var(--accent);
   --btn-color:#000;
@@ -44,26 +44,10 @@ input[type="number"]{border-radius:8px;padding:6px 8px;border:none;background:rg
 .todo-item{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.04)}
 .todo-item.completed{text-decoration:line-through;opacity:.6}
 .small{font-size:13px;color:var(--muted)}
-
-html, body {
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-}
-
-button {
-  transition: all 0.25s ease;
-  transform: translateY(0);
-}
-
-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-  
+html,body{overflow:hidden}
+button{transition:all .25s ease;transform:translateY(0)}
+button:hover{transform:translateY(-3px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
 </style>
-
 
 <header>
   <nav>
@@ -81,14 +65,14 @@ button:hover {
 
   <section id="viewTimer" class="view">
     <div class="timer-card">
-      <div class="session-label" id="sessionLabel">Focus session</div>
+      <div id="sessionLabel">Focus session</div>
       <div id="timer" class="timer-display">25:00</div>
       <div class="controls">
         <button id="startBtn" class="btn primary">Start</button>
         <button id="resetBtn" class="btn">Reset</button>
         <button id="fullscreenBtn" class="btn">Fullscreen</button>
         <button id="uploadBtn" class="btn">Upload BG</button>
-        <button id="colorBtn" class="btn">Change Button Color</button>
+        <button id="colorBtn" class="btn">Change Colors</button>
         <input type="file" id="bgFile" accept="image/*" style="display:none">
       </div>
     </div>
@@ -127,7 +111,7 @@ button:hover {
 <script>
 /* Tabs */
 const tabs={Clock:["tabClock","viewClock"],Timer:["tabTimer","viewTimer"],World:["tabWorld","viewWorld"],Dino:["tabDino","viewDino"],Todo:["tabTodo","viewTodo"]};
-function showTab(n){for(const [b,v] of Object.values(tabs)){};Object.values(tabs).forEach(([b,v])=>{document.getElementById(b).classList.remove("active");document.getElementById(v).classList.remove("show")});const [btn,view]=tabs[n];document.getElementById(btn).classList.add("active");setTimeout(()=>document.getElementById(view).classList.add("show"),10)}
+function showTab(n){Object.values(tabs).forEach(([b,v])=>{document.getElementById(b).classList.remove("active");document.getElementById(v).classList.remove("show")});const[btn,view]=tabs[n];document.getElementById(btn).classList.add("active");setTimeout(()=>document.getElementById(view).classList.add("show"),10)}
 for(const k in tabs){document.getElementById(tabs[k][0]).onclick=()=>showTab(k)}
 showTab("Clock");
 
@@ -149,63 +133,41 @@ function fmt(s){const m=Math.floor(s/60),x=s%60;return`${m.toString().padStart(2
 function update(){timerEl.textContent=fmt(remaining)}
 function beep(){try{const a=new(AudioContext||webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.type="sine";o.frequency.setValueAtTime(880,a.currentTime);g.gain.setValueAtTime(.1,a.currentTime);o.start();o.stop(a.currentTime+.3);}catch{}}
 function tick(){if(!isRunning)return;remaining--;update();if(remaining<0){beep();isFocus=!isFocus;remaining=(isFocus?+focusMin.value:+breakMin.value)*60;document.getElementById("modeBadge").textContent=isFocus?"FOCUS":"BREAK";}}
-function startPause(){if(!isRunning){isRunning=true;startBtn.textContent="Pause";timerInt=setInterval(tick,1000);}else{isRunning=false;clearInterval(timerInt);startBtn.textContent="Start";}}
-function reset(){isRunning=false;clearInterval(timerInt);isFocus=true;remaining=focusMin.value*60;update();startBtn.textContent="Start";}
+function startPause(){if(!isRunning){isRunning=true;startBtn.textContent="Pause";timerInt=setInterval(tick,1000);hideUI();}else{isRunning=false;clearInterval(timerInt);startBtn.textContent="Start";showUI();}}
+function reset(){isRunning=false;clearInterval(timerInt);isFocus=true;remaining=focusMin.value*60;update();startBtn.textContent="Start";showUI();}
 startBtn.onclick=startPause;resetBtn.onclick=reset;timerEl.onclick=startPause;update();
 
-/* Background upload with saving */
-uploadBtn.onclick = () => bgFile.click();
+/* === Fullscreen toggle === */
+document.getElementById("fullscreenBtn").onclick=()=>{const e=document.documentElement;if(!document.fullscreenElement){e.requestFullscreen().catch(console.warn);}else{document.exitFullscreen();}}
 
-bgFile.onchange = e => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const r = new FileReader();
-  r.onload = x => {
-    const imgData = x.target.result;
-    document.body.style.background = `url(${imgData}) center/cover no-repeat`;
-    localStorage.setItem("bgImage", imgData); // 💾 save it
-  };
-  r.readAsDataURL(f);
-};
+/* Hide UI during run */
+function hideUI(){document.querySelector("header").style.display="none";document.querySelector("footer").style.display="none";document.querySelectorAll(".view").forEach(v=>{if(v.id!=="viewTimer")v.style.display="none"})}
+function showUI(){document.querySelector("header").style.display="";document.querySelector("footer").style.display="";document.querySelectorAll(".view").forEach(v=>v.style.display="")}
 
-// Restore saved background on page load
-window.addEventListener("load", () => {
-  const savedBg = localStorage.getItem("bgImage");
-  if (savedBg) {
-    document.body.style.background = `url(${savedBg}) center/cover no-repeat`;
-  }
-});
+/* === Background upload + save === */
+uploadBtn.onclick=()=>bgFile.click();
+bgFile.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=x=>{const imgData=x.target.result;document.body.style.background=`url(${imgData}) center/cover no-repeat`;localStorage.setItem("bgImage",imgData)};r.readAsDataURL(f)};
+window.addEventListener("load",()=>{const savedBg=localStorage.getItem("bgImage");if(savedBg){document.body.style.background=`url(${savedBg}) center/cover no-repeat`}});
 
+/* === Color theme save === */
+colorBtn.onclick=()=>{const btnBg=prompt("Enter button background color:",getComputedStyle(document.documentElement).getPropertyValue("--btn-bg").trim());if(!btnBg)return;const btnText=prompt("Enter button text color:",getComputedStyle(document.documentElement).getPropertyValue("--btn-color").trim());if(!btnText)return;const globalText=prompt("Enter overall page text color:",getComputedStyle(document.documentElement).getPropertyValue("--text").trim());if(!globalText)return;document.documentElement.style.setProperty("--btn-bg",btnBg);document.documentElement.style.setProperty("--btn-color",btnText);document.documentElement.style.setProperty("--text",globalText);localStorage.setItem("themeColors",JSON.stringify({btnBg,btnText,globalText}))};
+window.addEventListener("load",()=>{const s=localStorage.getItem("themeColors");if(s){const{btnBg,btnText,globalText}=JSON.parse(s);document.documentElement.style.setProperty("--btn-bg",btnBg);document.documentElement.style.setProperty("--btn-color",btnText);document.documentElement.style.setProperty("--text",globalText)}});
 
-/* Button color & text color */
-colorBtn.onclick = () => {
-  // Ask for button background
-  const btnBg = prompt("Enter button background color (#hex or name):", getComputedStyle(document.documentElement).getPropertyValue("--btn-bg").trim());
-  if (!btnBg) return;
+/* === Save focus/break values === */
+focusMin.addEventListener("change",()=>localStorage.setItem("focusMin",focusMin.value));
+breakMin.addEventListener("change",()=>localStorage.setItem("breakMin",breakMin.value));
+window.addEventListener("load",()=>{if(localStorage.getItem("focusMin"))focusMin.value=localStorage.getItem("focusMin");if(localStorage.getItem("breakMin"))breakMin.value=localStorage.getItem("breakMin")});
 
-  // Ask for button text color
-  const btnText = prompt("Enter button text color (#hex or name):", getComputedStyle(document.documentElement).getPropertyValue("--btn-color").trim());
-  if (!btnText) return;
-
-  // Ask for global text color
-  const globalText = prompt("Enter overall page text color (#hex or name):", getComputedStyle(document.documentElement).getPropertyValue("--text").trim());
-  if (!globalText) return;
-
-  // Apply them
-  document.documentElement.style.setProperty("--btn-bg", btnBg);
-  document.documentElement.style.setProperty("--btn-color", btnText);
-  document.documentElement.style.setProperty("--text", globalText);
-};
-
-/* Todo */
+/* === Todo with saving === */
 const todoInput=document.getElementById("todoInput"),addTodo=document.getElementById("addTodo"),todoList=document.getElementById("todoList");
-let todos=[];
-function renderTodos(){todoList.innerHTML="";todos.forEach((t,i)=>{const d=document.createElement("div");d.className="todo-item"+(t.done?" completed":"");d.innerHTML=`<input type='checkbox' ${t.done?"checked":""} data-i='${i}'>${t.text}<button class='btn small' data-i='${i}'>Del</button>`;todoList.appendChild(d);});todoList.querySelectorAll("input").forEach(cb=>cb.onchange=e=>{todos[e.target.dataset.i].done=e.target.checked;renderTodos();});todoList.querySelectorAll("button").forEach(b=>b.onclick=e=>{todos.splice(e.target.dataset.i,1);renderTodos();});}
-addTodo.onclick=()=>{if(todoInput.value.trim()){todos.push({text:todoInput.value,done:false});todoInput.value="";renderTodos();}}
-todoInput.onkeydown=e=>{if(e.key==="Enter")addTodo.click();}
+let todos=JSON.parse(localStorage.getItem("todos")||"[]");
+function saveTodos(){localStorage.setItem("todos",JSON.stringify(todos))}
+function renderTodos(){todoList.innerHTML="";todos.forEach((t,i)=>{const d=document.createElement("div");d.className="todo-item"+(t.done?" completed":"");d.innerHTML=`<input type='checkbox' ${t.done?"checked":""} data-i='${i}'>${t.text}<button class='btn small' data-i='${i}'>Del</button>`;todoList.appendChild(d)});todoList.querySelectorAll("input").forEach(cb=>cb.onchange=e=>{todos[e.target.dataset.i].done=e.target.checked;saveTodos();renderTodos()});todoList.querySelectorAll("button").forEach(b=>b.onclick=e=>{todos.splice(e.target.dataset.i,1);saveTodos();renderTodos()})}
+addTodo.onclick=()=>{if(todoInput.value.trim()){todos.push({text:todoInput.value,done:false});todoInput.value="";saveTodos();renderTodos()}}
+todoInput.onkeydown=e=>{if(e.key==="Enter")addTodo.click()}
 renderTodos();
 
-/* Dino */
+/* === Dino === */
 const c=document.getElementById("dinoCanvas"),ctx=c.getContext("2d");function fit(){c.width=800;c.height=200;}fit();
 let G={speed:6,gravity:0.7},game={running:false,score:0,high:0,frames:0,obstacles:[],player:{x:50,y:0,vy:0,w:44,h:44,onGround:true}};
 function resetGame(){game.running=false;game.score=0;game.frames=0;game.obstacles=[];game.player.y=c.height-60-game.player.h;game.player.vy=0;game.player.onGround=true;}
@@ -218,92 +180,5 @@ c.addEventListener("click",jump);
 function loop(){if(game.running){game.frames++;game.player.vy+=G.gravity;game.player.y+=game.player.vy;if(game.player.y>=c.height-60-game.player.h){game.player.y=c.height-60-game.player.h;game.player.vy=0;game.player.onGround=true;}else game.player.onGround=false;if(game.frames%80==0)spawnObs();game.obstacles.forEach(o=>o.x-=G.speed);game.obstacles=game.obstacles.filter(o=>o.x>-40);game.obstacles.forEach(o=>{if(coll(game.player,o)){game.running=false;game.high=Math.max(game.high,game.score);}});if(game.frames%6==0)game.score++;}
 ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle="#111";ctx.fillRect(0,c.height-60,c.width,60);ctx.fillStyle="#eee";ctx.fillRect(game.player.x,game.player.y,game.player.w,game.player.h);ctx.fillStyle="#eee";game.obstacles.forEach(o=>ctx.fillRect(o.x,o.y,o.w,o.h));ctx.fillText("Score:"+game.score,10,20);ctx.fillText("Best:"+game.high,10,40);requestAnimationFrame(loop);}
 loop();
-
-/* === Fullscreen toggle === */
-const fullscreenBtn = document.getElementById("fullscreenBtn");
-fullscreenBtn.onclick = () => {
-  const elem = document.documentElement;
-  if (!document.fullscreenElement) {
-    elem.requestFullscreen().catch(err => console.warn(err));
-  } else {
-    document.exitFullscreen();
-  }
-};
-// Hide everything except timer when running
-function hideUI() {
-  document.querySelector("header").style.display = "none";
-  document.querySelector("footer").style.display = "none";
-  document.querySelectorAll(".view").forEach(v => {
-    if (v.id !== "viewTimer") v.style.display = "none";
-  });
-}
-
-// Show everything again
-function showUI() {
-  document.querySelector("header").style.display = "";
-  document.querySelector("footer").style.display = "";
-  document.querySelectorAll(".view").forEach(v => {
-    v.style.display = "";
-  });
-}
-
-function startPause() {
-  if (!isRunning) {
-    isRunning = true;
-    startBtn.textContent = "Pause";
-    timerInt = setInterval(tick, 1000);
-    hideUI(); // hides everything except timer
-  } else {
-    isRunning = false;
-    clearInterval(timerInt);
-    startBtn.textContent = "Start";
-    showUI(); // shows everything again
-  }
-}
-
-function reset() {
-  isRunning = false;
-  clearInterval(timerInt);
-  isFocus = true;
-  remaining = focusMin.value * 60;
-  startBtn.textContent = "Start";
-  showUI(); // shows everything again
-  update();
-}
-
-// Save background when user changes it
-function setBackground(imageUrl) {
-  document.body.style.backgroundImage = `url('${imageUrl}')`;
-  localStorage.setItem('bgImage', imageUrl); // save it
-}
-
-// On page load, restore saved background
-window.addEventListener('load', () => {
-  const savedBg = localStorage.getItem('bgImage');
-  if (savedBg) {
-    document.body.style.backgroundImage = `url('${savedBg}')`;
-  }
-});
-
-
-
-document.getElementById('bgUpload').addEventListener('change', (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      setBackground(e.target.result);
-    };
-    reader.readAsDataURL(file);
-  }
-});
-
-  
 </script>
 </html>
-
-
-
-
-
-
